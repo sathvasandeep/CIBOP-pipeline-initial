@@ -153,6 +153,80 @@ def generate_assessment_question(plan_item: dict) -> tuple[str, list[int]]:
     return text, slide_refs
 
 
+def revise_content(plan_item: dict, original_text: str, reviewer_comments: str,
+                   content_type: str = "video_script") -> tuple[str, list[int]]:
+    """Revise generated content based on reviewer comments.
+
+    The revision agent receives the original script + comments + slide text.
+    It may only draw on slide content — no new hallucination allowed.
+    """
+    client = get_client()
+
+    if content_type == "video_script":
+        prompt = f"""You are revising a video production script for a capital markets training programme (CIBOP).
+
+UOR ID: {plan_item["uor_id"]}
+UOR Title: {plan_item["uor_title"]}
+Sub-Competency: {plan_item["sc_text"]}
+Slide Range: {plan_item["slide_range_start"]}–{plan_item["slide_range_end"]}
+
+ORIGINAL SCRIPT:
+{original_text}
+
+REVIEWER COMMENTS / REQUESTED CHANGES:
+{reviewer_comments}
+
+SOURCE SLIDE TEXT (the ONLY content you may add or draw from):
+{plan_item["slide_excerpts"][:6000]}
+
+RULES — STRICTLY ENFORCED:
+1. Apply the reviewer's requested changes faithfully.
+2. Every fact, term, and example you add or keep must come from the SOURCE SLIDE TEXT.
+3. Do NOT introduce any concept, person, company, or regulation not in the slide text.
+4. Slide references must remain in ascending order.
+5. Keep the same 8-scene markdown table format:
+   | # | Character | Visual Cue | On-Screen Text | Voice Over |
+6. Preserve RYO (dry wit, expert mentor) and ARIA (curious analyst, comic timing) voices.
+7. Keep Voice Over to 2–3 sentences per scene. On-Screen Text to 5 words max.
+
+Output ONLY the revised table, then on a new line:
+SLIDE_REFS_USED: [comma-separated slide numbers in ascending order]"""
+
+    else:  # assessment
+        prompt = f"""You are revising a knowledge assessment question for CIBOP capital markets training.
+
+UOR ID: {plan_item["uor_id"]}
+Sub-Competency: {plan_item["sc_text"]}
+Question Type: {plan_item.get("question_type", "MCQ_INLINE")}
+
+ORIGINAL QUESTION:
+{original_text}
+
+REVIEWER COMMENTS / REQUESTED CHANGES:
+{reviewer_comments}
+
+SOURCE SLIDE TEXT (the ONLY content you may draw from):
+{plan_item["slide_excerpts"][:5000]}
+
+RULES — STRICTLY ENFORCED:
+1. Apply the reviewer's requested changes faithfully.
+2. Every option, answer, and explanation must come from the SOURCE SLIDE TEXT.
+3. Keep the same question format as the original.
+4. Do NOT introduce any fact or example not in the slide text.
+
+Output ONLY the revised question, then:
+SLIDE_REFS_USED: [slide numbers, ascending order]"""
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    text = resp.content[0].text
+    slide_refs = _extract_slide_refs(text)
+    return text, slide_refs
+
+
 def _extract_slide_refs(text: str) -> list[int]:
     """Extract the SLIDE_REFS_USED line from generated text."""
     match = re.search(r'SLIDE_REFS_USED:\s*\[?([\d,\s]+)\]?', text)
