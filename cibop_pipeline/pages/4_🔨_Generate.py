@@ -5,8 +5,10 @@ import time
 from lib.db import (get_plan_items, get_files_for_topic,
                     save_generated, get_generated, update_topic_status)
 from lib.generator import generate_video_script, generate_assessment_question
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Generate — CIBOP", layout="wide")
+render_topic_selector()
 st.title("🔨 Generate Content")
 
 if "selected_topic_id" not in st.session_state:

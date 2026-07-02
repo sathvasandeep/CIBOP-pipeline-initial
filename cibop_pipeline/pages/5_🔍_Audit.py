@@ -5,8 +5,10 @@ import time
 from lib.db import (get_plan_items, get_generated, save_audit,
                     get_all_audits_for_topic, update_topic_status)
 from lib.auditor import audit_content, score_color, overall_pass
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Audit — CIBOP", layout="wide")
+render_topic_selector()
 st.title("🔍 Content Audit")
 
 if "selected_topic_id" not in st.session_state:

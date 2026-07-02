@@ -8,8 +8,10 @@ from lib.db import (get_generated, get_plan_items, get_all_audits_for_topic,
                     update_topic_status, save_audit)
 from lib.auditor import audit_content
 from lib.generator import revise_content
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Review — CIBOP", layout="wide")
+render_topic_selector()
 st.title("✏️ Review & Approve")
 
 if "selected_topic_id" not in st.session_state:

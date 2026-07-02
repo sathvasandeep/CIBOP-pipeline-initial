@@ -3,9 +3,11 @@
 import streamlit as st
 from lib.db import save_file_record, get_files_for_topic, update_topic_status
 from lib.parser import extract_slides_text, parse_uor_excel, extract_pdf_text, get_slide_excerpt
+from lib.sidebar import render_topic_selector
 import json
 
 st.set_page_config(page_title="Setup — CIBOP", layout="wide")
+render_topic_selector()
 st.title("⚙️ Setup")
 
 # ── Guard: topic must be selected ─────────────────────────────────────────────

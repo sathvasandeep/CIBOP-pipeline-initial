@@ -7,8 +7,10 @@ from lib.db import (get_files_for_topic, save_uors, get_uors,
                     update_topic_status, update_plan_item)
 from lib.parser import parse_slide_range, get_slide_excerpt
 from lib.planner import build_plan
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Plan — CIBOP", layout="wide")
+render_topic_selector()
 st.title("📋 Content Plan")
 
 if "selected_topic_id" not in st.session_state:

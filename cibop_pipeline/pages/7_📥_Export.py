@@ -4,8 +4,10 @@ import re
 import io
 import streamlit as st
 from lib.db import get_generated, get_plan_items, get_review, get_all_audits_for_topic
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Export — CIBOP", layout="wide")
+render_topic_selector()
 st.title("📥 Export")
 
 if "selected_topic_id" not in st.session_state:

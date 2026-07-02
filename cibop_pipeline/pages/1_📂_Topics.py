@@ -2,8 +2,10 @@
 
 import streamlit as st
 from lib.db import list_topics, create_topic, delete_topic
+from lib.sidebar import render_topic_selector
 
 st.set_page_config(page_title="Topics — CIBOP", layout="wide")
+render_topic_selector()
 st.title("📂 Topics")
 st.caption("Each topic = one training module with its own PPT and UOR file.")
 
