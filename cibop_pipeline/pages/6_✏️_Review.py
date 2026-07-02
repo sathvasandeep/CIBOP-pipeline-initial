@@ -86,39 +86,76 @@ def parse_script_table(script_text: str):
 
 
 def render_script_view(script_text: str):
-    """Render a video script with the markdown table as a visual table."""
+    """Render a video script with the markdown table as a wrapped HTML table."""
     df, prefix, suffix = parse_script_table(script_text)
 
     if prefix:
         st.caption(prefix)
 
     if df is not None:
-        # Build column config with appropriate widths
-        col_config = {}
+        # Map column names to display widths (percentage of table)
+        col_widths = {}
         for col in df.columns:
             col_lower = col.lower()
             if "#" in col_lower:
-                col_config[col] = st.column_config.TextColumn(col, width="small")
+                col_widths[col] = "3%"
             elif "character" in col_lower:
-                col_config[col] = st.column_config.TextColumn(col, width="small")
-            elif "visual" in col_lower or "cue" in col_lower:
-                col_config[col] = st.column_config.TextColumn(col, width="medium")
-            elif "on-screen" in col_lower or "text" in col_lower:
-                col_config[col] = st.column_config.TextColumn(col, width="medium")
+                col_widths[col] = "8%"
+            elif "visual" in col_lower or "cue" in col_lower or "animation" in col_lower:
+                col_widths[col] = "22%"
+            elif "on-screen" in col_lower or "screen" in col_lower:
+                col_widths[col] = "20%"
             elif "voice" in col_lower or "over" in col_lower:
-                col_config[col] = st.column_config.TextColumn(col, width="large")
+                col_widths[col] = "47%"
+            else:
+                col_widths[col] = "15%"
 
-        st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
-            column_config=col_config,
+        # Character colour coding
+        char_colours = {
+            "MOTION": ("#1E3A5F", "#E8F0FA"),   # navy on light blue
+            "RYO":    ("#005F5F", "#E8FAF5"),   # teal on light teal
+            "ARIA":   ("#6B3A8B", "#F5EAF5"),   # purple on light purple
+            "BOTH":   ("#8B4513", "#FAF0E8"),   # brown on cream
+        }
+
+        # Build HTML
+        header_cells = "".join(
+            f'<th style="width:{col_widths.get(c,"15%")};padding:8px 10px;'
+            f'background:#1E3A5F;color:white;font-size:12px;text-align:left;'
+            f'white-space:nowrap;">{c}</th>'
+            for c in df.columns
         )
+
+        rows_html = ""
+        for _, row in df.iterrows():
+            char_val = str(row.get("Character", "")).strip().upper()
+            fg, bg = char_colours.get(char_val, ("#333", "#FAFAFA"))
+            row_cells = ""
+            for col in df.columns:
+                cell_val = str(row[col]).replace("\n", "<br>").replace("/", "<br>")
+                col_lower = col.lower()
+                is_char = "character" in col_lower
+                cell_style = (
+                    f"padding:8px 10px;vertical-align:top;font-size:12px;"
+                    f"word-wrap:break-word;white-space:normal;border-bottom:1px solid #E0E0E0;"
+                )
+                if is_char:
+                    cell_style += f"font-weight:bold;color:{fg};background:{bg};"
+                row_cells += f'<td style="{cell_style}">{cell_val}</td>'
+            rows_html += f"<tr>{row_cells}</tr>"
+
+        html = f"""
+<div style="overflow-x:auto;border-radius:8px;border:1px solid #DDD;margin-bottom:8px;">
+<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;">
+  <thead><tr>{header_cells}</tr></thead>
+  <tbody>{rows_html}</tbody>
+</table>
+</div>"""
+        st.html(html)
     else:
         st.text(script_text)
 
     if suffix:
-        # Show SLIDE_REFS line cleanly
         refs_match = re.search(r'SLIDE_REFS_USED:\s*(.+)', suffix)
         if refs_match:
             st.caption(f"📎 Slides referenced: {refs_match.group(1)}")
