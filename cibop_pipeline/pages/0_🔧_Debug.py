@@ -1,5 +1,6 @@
 """Temporary debug page — delete after fixing connection issues."""
 import streamlit as st
+import traceback
 
 st.title("🔧 Connection Debug")
 
@@ -12,32 +13,27 @@ try:
     st.success(f"✅ SUPABASE_KEY = `{key[:20]}...`")
     st.success(f"✅ ANTHROPIC_API_KEY = `{api[:15]}...`")
 except Exception as e:
-    st.error(f"❌ Secrets missing or wrong key name: {e}")
+    st.error(f"❌ Secrets error: {e}")
     st.stop()
 
-st.markdown("### 2. Supabase connection test")
+st.markdown("### 2. Raw HTTP test (bypass supabase client)")
+import httpx
+try:
+    resp = httpx.get(f"{url}/rest/v1/topics?select=id&limit=1",
+                     headers={"apikey": key, "Authorization": f"Bearer {key}"},
+                     timeout=10)
+    st.success(f"✅ HTTP response: {resp.status_code}")
+    st.code(resp.text[:500])
+except Exception as e:
+    st.error(f"❌ Raw HTTP failed: {type(e).__name__}: {e}")
+    st.code(traceback.format_exc())
+
+st.markdown("### 3. Supabase client test")
 try:
     from supabase import create_client
     sb = create_client(url, key)
-    st.success("✅ Supabase client created")
-except Exception as e:
-    st.error(f"❌ create_client failed: {e}")
-    st.stop()
-
-st.markdown("### 3. Table test")
-try:
     result = sb.table("topics").select("id").limit(1).execute()
-    st.success(f"✅ topics table exists — {result}")
+    st.success(f"✅ Connected! Result: {result}")
 except Exception as e:
-    st.error(f"❌ Table query failed: {e}")
-    st.markdown("""
-**If you see 'relation topics does not exist':**
-→ The SQL setup hasn't been run in Supabase yet.
-Go to your Supabase project → SQL Editor → paste `supabase_setup.sql` → Run.
-
-**If you see 'invalid API key' or 401:**
-→ Wrong key. Use the **anon public** key from Supabase Settings → API, NOT the service role key.
-
-**If you see a connection/DNS error:**
-→ The SUPABASE_URL is wrong. It should look exactly like `https://abcdefgh.supabase.co` with no trailing slash.
-    """)
+    st.error(f"❌ Full error: {type(e).__name__}: {e}")
+    st.code(traceback.format_exc())
