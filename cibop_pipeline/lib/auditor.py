@@ -42,8 +42,26 @@ AUDIT CHECKS — score each 0 to 100:
    Note: if no slide refs are cited, score is 0.
 
 3. FIDELITY SCORE (0–100):
-   - Is every fact, term, and example in the content traceable to the slide source text? (60 pts)
-   - Are there any concepts, companies, regulations, or examples NOT in the slide text? (40 pts, deduct for each hallucination)
+   This is a VIDEO SCRIPT for learners. It contains deliberate storytelling elements. Apply the following rules:
+
+   ACCEPTABLE — do NOT flag these:
+   - Analogies, metaphors, similes ("like a potluck", "like a handshake with a formula")
+   - Character humour, wit, or banter between RYO and ARIA
+   - Conversational phrasing ("So basically...", "Think of it as...")
+   - Scene directions, visual cue descriptions, and character actions
+   - Paraphrasing of slide content in plain English
+   - Summary sentences that rephrase slide concepts without adding new facts
+
+   FLAG ONLY these (genuine hallucination):
+   - A specific factual claim (number, date, percentage, formula, threshold) that is NOT in the slide text
+   - A named regulation, standard, or body NOT mentioned in the slides
+   - A named company, person, or product NOT in the slides
+   - A definition that CONTRADICTS the slide text
+   - A process step or rule stated as fact that is absent from the slides
+
+   Scoring:
+   - Start at 100. Deduct 15 pts per genuine factual hallucination (max 4 deductions = 40 pts).
+   - Do NOT deduct for analogies, humour, conversational language, or paraphrasing.
 
 Return your audit as valid JSON only (no extra text):
 {{

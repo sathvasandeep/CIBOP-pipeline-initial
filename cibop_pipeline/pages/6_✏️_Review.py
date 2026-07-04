@@ -3,6 +3,11 @@
 import re
 import streamlit as st
 import pandas as pd
+
+
+def _nkey(s):
+    """Natural sort key: ETLC.2 < ETLC.10."""
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(s))]
 from lib.db import (get_generated, get_plan_items, get_all_audits_for_topic,
                     update_generated_text, save_review, get_review,
                     update_topic_status, save_audit)
@@ -32,7 +37,16 @@ st.info("""
 - Only approved content will appear in the Export
 """)
 
-reviewer_name = st.text_input("Your name (for review record)", placeholder="e.g. Priya Sharma")
+# Persist reviewer name across reruns using session state
+_saved_name = st.session_state.get("_reviewer_name", "")
+reviewer_name = st.text_input(
+    "Your name (for review record)",
+    value=_saved_name,
+    placeholder="e.g. Priya Sharma",
+    key="_reviewer_name_widget"
+)
+if reviewer_name:
+    st.session_state["_reviewer_name"] = reviewer_name
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -181,7 +195,7 @@ with col1:
 with col2:
     filter_status = st.selectbox("Show", ["All", "Needs Review (no audit)", "Failed audit", "Approved"])
 with col3:
-    filter_uor = st.selectbox("UOR", ["All"] + sorted(set(g["uor_id"] for g in generated)))
+    filter_uor = st.selectbox("UOR", ["All"] + sorted(set(g["uor_id"] for g in generated), key=_nkey))
 
 ct = "video_script" if view_type == "Video Scripts" else "assessment"
 items = [g for g in generated if g["content_type"] == ct]
@@ -201,7 +215,7 @@ st.markdown(f"**Showing {len(items)} items**")
 st.markdown("---")
 
 # ── Review cards ──────────────────────────────────────────────────────────────
-for item in items:
+for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"]))):
     audit = audit_map.get(item["id"])
     review = get_review(item["id"])
     plan_item = plan_map.get(f"{item['uor_id']}_{item['sc_id']}")

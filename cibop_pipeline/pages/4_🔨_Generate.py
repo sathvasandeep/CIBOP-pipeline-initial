@@ -1,7 +1,13 @@
 """Generate — create video scripts and assessment questions SC by SC."""
 
+import re
 import streamlit as st
 import time
+
+
+def _nkey(s):
+    """Natural sort key: ETLC.2 < ETLC.10, SC1 < SC10."""
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(s))]
 from lib.db import (get_plan_items, get_files_for_topic,
                     save_generated, get_generated, update_topic_status)
 from lib.generator import generate_video_script, generate_assessment_question
@@ -56,7 +62,7 @@ with col_b:
     only_missing = st.checkbox("Skip already generated (only generate missing)", value=True)
     selected_uor = st.selectbox(
         "Generate for UOR (or All)",
-        ["All"] + sorted(set(i["uor_id"] for i in plan_items))
+        ["All"] + sorted(set(i["uor_id"] for i in plan_items), key=_nkey)
     )
 
 if st.button("▶️ Start Generation", type="primary"):
@@ -126,7 +132,7 @@ else:
     ct = "video_script" if view_type == "Video Scripts" else "assessment"
     items = [g for g in generated if g["content_type"] == ct]
 
-    for g in items:
+    for g in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"]))):
         with st.expander(f"{g['uor_id']} / {g['sc_id']}", expanded=False):
             st.markdown(g["content_text"])
             if g.get("slide_refs_used"):

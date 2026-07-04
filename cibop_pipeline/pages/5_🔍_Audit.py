@@ -1,7 +1,13 @@
 """Audit — independent scoring of every generated piece of content."""
 
+import re
 import streamlit as st
 import time
+
+
+def _nkey(s):
+    """Natural sort key: ETLC.2 < ETLC.10."""
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(s))]
 from lib.db import (get_plan_items, get_generated, save_audit,
                     get_all_audits_for_topic, update_topic_status)
 from lib.auditor import audit_content, score_color, overall_pass
@@ -118,8 +124,9 @@ for row in all_audit_data:
     uid = row["content"]["uor_id"]
     by_uor.setdefault(uid, []).append(row)
 
-for uor_id in sorted(by_uor.keys()):
-    rows = by_uor[uor_id]
+for uor_id in sorted(by_uor.keys(), key=_nkey):
+    rows = sorted(by_uor[uor_id],
+                  key=lambda r: (_nkey(r["content"]["sc_id"]), r["content"]["content_type"]))
     uor_pass = all(r["audit"].get("passed") for r in rows if r["audit"])
     header_icon = "✅" if uor_pass else "❌"
 
