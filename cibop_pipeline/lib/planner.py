@@ -127,15 +127,27 @@ def _assign_focus_angles(client: anthropic.Anthropic, sc_texts: list,
                     f"UOR: {uor_id} — {uor_title}\n\n"
                     f"Slide content:\n{slide_excerpt[:3000]}\n\n"
                     f"These {len(sc_texts)} sub-competencies all map to the same slides:\n{sc_list}\n\n"
-                    "Assign each SC a DISTINCT focus angle so each video script covers a "
-                    "DIFFERENT aspect of the slides — no two SCs should produce similar scripts.\n"
-                    "Each focus angle should be 1-2 sentences describing exactly which concepts "
-                    "from the slides this SC should focus on, and what to emphasise.\n"
+                    "Assign each SC a DISTINCT, SPECIFIC focus angle so each video explains a "
+                    "DIFFERENT part of the content — no two SCs should produce similar scripts.\n\n"
+                    "Rules for each focus angle:\n"
+                    "1. Name the SPECIFIC financial concepts or products this SC should explain "
+                    "(e.g. 'Interest Rate Swap and Equity Swap', not just 'types of swaps')\n"
+                    "2. Say what the script should DEFINE or EXPLAIN in depth "
+                    "(e.g. 'define fixed leg vs floating leg, explain SOFR/EURIBOR benchmark')\n"
+                    "3. Mention any worked example or comparison that would help\n"
+                    "4. Explicitly state any concept the other SCs are handling, so this SC avoids repeating it\n\n"
                     "Return ONLY a JSON array with one string per SC, in the same order.\n"
-                    "Example: [\"Focus on defining the swap agreement structure: payment date and "
-                    "accrual method. Emphasise the ISDA Master Agreement as the governing framework.\", "
-                    "\"Focus on the parties to a swap: who First Party and Second Party are, and what "
-                    "'underlyer' means (the underlying asset driving cash flows).\"]"
+                    "Example for a 'Types of Swaps' UOR with 3 SCs:\n"
+                    "[\"Explain Interest Rate Swaps in depth: define fixed leg (payer) and floating "
+                    "leg (receiver), how SOFR/EURIBOR determines the floating payment, and why "
+                    "counterparties use IRS to manage interest rate exposure. Include a worked "
+                    "example showing net payment calculation. Do NOT cover equity swaps or CDS.\",\n"
+                    "\"Explain Equity Swaps and FX Swaps: for equity swaps, define the equity leg "
+                    "(return on stock or index) vs the interest rate leg, and who uses them (TRS). "
+                    "For FX swaps, explain the spot + forward structure. Do NOT cover IRS or CDS.\",\n"
+                    "\"Explain Credit Default Swaps: define protection buyer, protection seller, "
+                    "reference entity, credit event, and CDS premium. Explain how the protection "
+                    "payment is triggered. Distinguish CDS from IRS. Do NOT cover equity or FX swaps.\"]"
                 )
             }]
         )
@@ -154,26 +166,35 @@ def _assign_focus_angles(client: anthropic.Anthropic, sc_texts: list,
 
 def _extract_key_terms(client: anthropic.Anthropic, sc_text: str,
                        slide_excerpt: str, uor_id: str) -> list:
-    """Ask Claude to extract 5-8 key terms from the slide excerpt relevant to this SC."""
+    """Extract 6-10 key terms that a video script on this topic MUST cover.
+
+    Combines terms found in the slides with core domain terms implied by the topic,
+    so that even visually-heavy slides with sparse extracted text produce a rich
+    required-terms list.
+    """
     if not slide_excerpt:
         return []
     try:
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=300,
+            max_tokens=400,
             messages=[{
                 "role": "user",
                 "content": (
-                    f"Sub-competency: {sc_text}\n\n"
+                    f"UOR topic: {sc_text}\n\n"
                     f"Slide text:\n{slide_excerpt[:3000]}\n\n"
-                    "List 5-8 key terms or phrases from the slide text that are directly "
-                    "relevant to this sub-competency. Return ONLY a JSON array of strings. "
-                    "Only include terms that actually appear in the slide text above."
+                    "List 6-10 key financial terms that a training video on this topic MUST cover.\n"
+                    "Include:\n"
+                    "  (a) All specific named concepts that appear in the slide text (e.g. named "
+                    "swap types, product names, defined terms)\n"
+                    "  (b) Core domain terms strongly implied by the topic that a practitioner "
+                    "would expect to see explained (e.g. if topic is 'Interest Rate Swap', include "
+                    "'fixed leg', 'floating leg', 'SOFR/EURIBOR', 'notional principal')\n"
+                    "Return ONLY a JSON array of strings, no explanation."
                 )
             }]
         )
         text = resp.content[0].text.strip()
-        # Extract JSON array
         match = re.search(r'\[.*?\]', text, re.DOTALL)
         if match:
             return json.loads(match.group())

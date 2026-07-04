@@ -45,11 +45,27 @@ CONTENT RULES
 
 4. SC FOCUS ANGLE — this script covers ONE specific angle per the Sub-Competency above.
    Focus tightly on that angle. Do not repeat explanations that belong to adjacent SCs.
+   Read the [FOCUS ANGLE] section in the Sub-Competency field above and follow it precisely.
 
 5. DEFINITIONS — define every key term precisely on first use.
    For example: "underlyers" means the underlying assets (e.g. interest rates, equities,
    credit reference entities) whose values drive the cash flow calculations in the swap —
    NOT the parties themselves.
+   Every term in the REQUIRED KEY TERMS list must be defined or explained in a Voice Over.
+
+6. THIS VIDEO IS STANDALONE — the video exists independently of any presentation deck.
+   NEVER say "Slide X", "as shown in slide", "refer to the slide", or any slide reference
+   in ANY column (Visual Cue, On-Screen Text, or Voice Over). The audience will not see
+   slides. Write as if you are delivering a standalone educational video.
+
+7. DEPTH OVER BREVITY — a Voice Over that says "this is a type of swap" is useless.
+   Each RYO scene must deliver a crisp, accurate financial explanation. Example of the
+   expected depth:
+   "An Interest Rate Swap is an OTC derivative where two counterparties exchange cash
+    flows — one paying a fixed rate, the other a floating rate benchmarked to SOFR or
+    EURIBOR — calculated on the same notional principal. No principal is exchanged;
+    only the net difference in interest obligations changes hands on each settlement date."
+   That specificity is required.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CHARACTER GUIDE — 4 options:
