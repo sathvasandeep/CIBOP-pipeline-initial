@@ -1,5 +1,6 @@
 """Planning agent — produces a verified content plan before any generation."""
 
+import re
 import json
 import streamlit as st
 import anthropic
@@ -56,6 +57,14 @@ def build_plan(uors: list, slides: dict, extra_text: str = "") -> list:
         ears_raw = uor.get("ears", "")
         ears_list = [e.strip() for e in ears_raw.replace("·", ",").split(",") if e.strip()]
 
+        # Extract required topics / key terms from the slides ONCE per UOR
+        uor_key_terms = _extract_key_terms(client, uor.get("objective", ""), excerpt, uor["uor_id"])
+
+        # Assign differentiated focus angles so SCs sharing the same slides cover different aspects
+        sc_texts_raw = [sc["sc_text"].strip() for sc in all_scs if sc["sc_text"].strip()]
+        focus_angles = _assign_focus_angles(client, sc_texts_raw, excerpt, uor["uor_id"],
+                                            uor.get("title", ""))
+
         for sc_idx, sc in enumerate(all_scs):
             sc_text = sc["sc_text"].strip()
             if not sc_text:
@@ -63,37 +72,84 @@ def build_plan(uors: list, slides: dict, extra_text: str = "") -> list:
 
             sc_id = f"SC{sc_idx + 1}"
             if sc_text.upper().startswith("SC"):
-                # Extract existing SC ID like SC1.1
                 parts = sc_text.split(" ", 1)
                 if len(parts) > 0 and re.match(r'SC\d+\.\d+', parts[0]):
                     sc_id = parts[0]
                     sc_text = parts[1] if len(parts) > 1 else sc_text
 
-            # Pick EAR verb: cycle through the list for variety
             ear_verb = ears_list[sc_idx % len(ears_list)] if ears_list else "EXPLAIN"
 
-            # Assign question type cyclically
             q_type = QUESTION_TYPES[q_type_cycle % len(QUESTION_TYPES)]
             q_type_cycle += 1
 
-            # Use AI to extract key terms from the relevant slide excerpt
-            key_terms = _extract_key_terms(client, sc_text, excerpt, uor["uor_id"])
+            # Attach the differentiated focus angle to the SC text so the generator uses it
+            focus = focus_angles[sc_idx] if sc_idx < len(focus_angles) else sc_text
+            enriched_sc_text = f"{sc_text}\n\n[FOCUS ANGLE] {focus}"
 
             plan_items.append({
                 "uor_id": uor["uor_id"],
                 "uor_title": uor.get("title", ""),
                 "sc_id": sc_id,
-                "sc_text": sc_text,
+                "sc_text": enriched_sc_text,
                 "ear_verb": ear_verb,
                 "slide_range_start": start,
                 "slide_range_end": end,
                 "slide_excerpts": excerpt,
-                "key_terms": key_terms,
+                "key_terms": uor_key_terms,   # shared across SCs in this UOR
                 "question_type": q_type,
                 "plan_approved": False
             })
 
     return plan_items
+
+
+def _assign_focus_angles(client: anthropic.Anthropic, sc_texts: list,
+                         slide_excerpt: str, uor_id: str, uor_title: str) -> list:
+    """
+    Given multiple SCs that share the same slide range, assign each SC a DISTINCT
+    focus angle so each video covers a different aspect of the slides.
+
+    Returns a list of focus angle strings, one per SC.
+    """
+    if not sc_texts:
+        return []
+    if len(sc_texts) == 1:
+        return [sc_texts[0]]
+
+    try:
+        sc_list = "\n".join(f"{i+1}. {s}" for i, s in enumerate(sc_texts))
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=600,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"UOR: {uor_id} — {uor_title}\n\n"
+                    f"Slide content:\n{slide_excerpt[:3000]}\n\n"
+                    f"These {len(sc_texts)} sub-competencies all map to the same slides:\n{sc_list}\n\n"
+                    "Assign each SC a DISTINCT focus angle so each video script covers a "
+                    "DIFFERENT aspect of the slides — no two SCs should produce similar scripts.\n"
+                    "Each focus angle should be 1-2 sentences describing exactly which concepts "
+                    "from the slides this SC should focus on, and what to emphasise.\n"
+                    "Return ONLY a JSON array with one string per SC, in the same order.\n"
+                    "Example: [\"Focus on defining the swap agreement structure: payment date and "
+                    "accrual method. Emphasise the ISDA Master Agreement as the governing framework.\", "
+                    "\"Focus on the parties to a swap: who First Party and Second Party are, and what "
+                    "'underlyer' means (the underlying asset driving cash flows).\"]"
+                )
+            }]
+        )
+        text = resp.content[0].text.strip()
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            angles = json.loads(match.group())
+            # Ensure same length as input
+            while len(angles) < len(sc_texts):
+                angles.append(sc_texts[len(angles)])
+            return angles[:len(sc_texts)]
+    except Exception:
+        pass
+    return sc_texts  # fallback: use SC texts as-is
 
 
 def _extract_key_terms(client: anthropic.Anthropic, sc_text: str,
@@ -118,13 +174,9 @@ def _extract_key_terms(client: anthropic.Anthropic, sc_text: str,
         )
         text = resp.content[0].text.strip()
         # Extract JSON array
-        import re
         match = re.search(r'\[.*?\]', text, re.DOTALL)
         if match:
             return json.loads(match.group())
     except Exception:
         pass
     return []
-
-
-import re

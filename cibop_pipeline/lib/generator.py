@@ -18,59 +18,79 @@ Sub-Competency: {sc_text}
 EAR Verb: {ear_verb}
 Slide Range: {slide_start}–{slide_end}
 
-SOURCE SLIDE TEXT (the ONLY content you may use):
+SOURCE SLIDES — defines the mandatory curriculum for this video:
 {slide_excerpts}
 
-KEY TERMS from this SC (must appear in the script):
+REQUIRED KEY TERMS — every term below MUST appear clearly in the script:
 {key_terms}
 
-RULES — STRICTLY ENFORCED:
-1. Every fact, term, example, and number in your script must come from the SOURCE SLIDE TEXT above.
-2. Do NOT introduce any concept, person, company, regulation, or example not in the slide text.
-3. Reference slide numbers in ascending order (e.g., slide 4 before slide 7, never reverse).
-4. If the slides have no text about a concept, do not include that concept.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. MANDATORY COVERAGE — every topic, concept, and term in the SOURCE SLIDES must be addressed.
+   If the slides mention "OTC Derivative", "Notional Amount", "Two Counterparties",
+   "ISDA Master Agreement" — those must appear in the script. Never skip a slide concept.
 
-OUTPUT FORMAT — produce a markdown table with exactly 8 rows and 5 columns:
-| # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
+2. DOMAIN ENRICHMENT ALLOWED — the slides are often brief bullet points. You MUST enrich them
+   with accurate capital markets knowledge to produce a high-quality educational script.
+   Example: If slides say "swap = bilateral contract", a good script says:
+   "A swap is an OTC derivative — a bilateral contract negotiated directly between two
+   counterparties, typically governed by an ISDA Master Agreement. Because swaps are
+   OTC, the terms are customisable: notional size, tenor, payment frequency, and
+   reference rate. This flexibility is both a feature and a risk."
+   That depth is expected and required.
+
+3. FACTUAL ACCURACY — every enrichment must be correct financial fact.
+   Do not invent regulations, companies, or numbers not grounded in standard finance.
+
+4. SC FOCUS ANGLE — this script covers ONE specific angle per the Sub-Competency above.
+   Focus tightly on that angle. Do not repeat explanations that belong to adjacent SCs.
+
+5. DEFINITIONS — define every key term precisely on first use.
+   For example: "underlyers" means the underlying assets (e.g. interest rates, equities,
+   credit reference entities) whose values drive the cash flow calculations in the swap —
+   NOT the parties themselves.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CHARACTER GUIDE — 4 options:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-• MOTION — Full-screen branded animation. Use for opening scene, complex concept diagrams, formulas, flow charts, infographics. No human on screen.
-• RYO — Male, mid-30s, navy suit, calm and precise. Expert/Mentor. Dry wit. At whiteboard, desk, or camera.
-• ARIA — Female, late-20s, teal blazer, animated and curious. Curious Analyst. Comic timing. Reacts, questions, connects.
-• BOTH — Split screen (RYO left, ARIA right). Use for dialogue exchanges or summary scene.
+• MOTION — Full-screen branded animation. Use for opening scene, complex diagrams, formulas, flows. No human on screen.
+• RYO — Male, mid-30s, navy suit. Expert/Mentor. Measured, dry wit. At whiteboard, desk, or camera.
+• ARIA — Female, late-20s, teal blazer. Curious Analyst. Energetic, great comic timing. Reacts, questions.
+• BOTH — Split screen (RYO left, ARIA right). For dialogue exchanges or summary scene.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SCENE STRUCTURE (8 scenes):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Scene 1  (MOTION): Animated opening — introduce the topic visually with a graphic or diagram that sets the scene. On-Screen Text shows module ID, video title, EAR verb.
-Scene 2  (RYO):    Core concept 1 from slides — whiteboard or desk. On-Screen Text: key term in CAPS + 2–3-line definition/formula from the slides.
-Scene 3  (ARIA):   Question or reaction to Scene 2 — "Aria thinking / puzzled / excited". On-Screen Text: "Aria's Question:" then 1-line question.
-Scene 4  (RYO):    Core concept 2 from slides — prop, diagram, or worked example. On-Screen Text: structured 3–4 line text with labels and data from slide.
-Scene 5  (MOTION): Infographic or animated diagram for a list, process, or formula from the slides. On-Screen Text: structured label-value pairs or bullet list.
-Scene 6  (ARIA):   Moment of natural humor OR clarifying question. On-Screen Text: "Aria's Reaction:" then 1-line witty or curious remark.
-Scene 7  (BOTH):   Summary split-screen exchange — Aria summarises in her own words, Ryo confirms/adds nuance. On-Screen Text: "KEY PRINCIPLES:" then 3 bullet lines.
-Scene 8  (RYO):    Tease next topic. Ryo straightens jacket, looks at camera. On-Screen Text: "COMING UP:" then 1-line tease.
+Scene 1  (MOTION): Animated opening — introduce the topic with a graphic/diagram. On-Screen Text: module ID, video title, EAR verb.
+Scene 2  (RYO):    Core concept 1 — whiteboard or desk. On-Screen Text: key term in CAPS + 2–3 line definition.
+Scene 3  (ARIA):   Question or reaction — "Aria thinking/puzzled/excited". On-Screen Text: "Aria's Question: / [question]"
+Scene 4  (RYO):    Core concept 2 with worked example or diagram. On-Screen Text: structured 3–4 line text with labels.
+Scene 5  (MOTION): Infographic for a list, process, or formula. On-Screen Text: structured label–value pairs or bullets.
+Scene 6  (ARIA):   Natural humor moment OR clarifying question. On-Screen Text: "Aria's Reaction: / [remark]"
+Scene 7  (BOTH):   Summary split-screen. Aria summarises, Ryo confirms. On-Screen Text: "KEY PRINCIPLES: / • ... / • ... / • ..."
+Scene 8  (RYO):    Tease next topic. On-Screen Text: "COMING UP: / [1-line tease]"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COLUMN INSTRUCTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Visual Cue / Animation — write a FULL production brief (2–4 sentences):
-  • For MOTION: describe the animation (what graphics appear, what animates, what labels/arrows are shown, colours or icons if relevant)
-  • For RYO/ARIA: describe character position (whiteboard / desk / camera), props (contract, diagram, board writing), and any key graphic behind them
-  • For BOTH: describe split-screen layout and what each side shows
+Visual Cue / Animation — FULL production brief (2–4 sentences):
+  • MOTION: what graphics animate, what labels/arrows appear, colour scheme
+  • RYO/ARIA: character position, props, board writing, graphic behind them
+  • BOTH: split-screen layout, what each side shows
 
-On-Screen Text — write MULTI-LINE structured text (use forward slash / to represent line breaks):
-  • Scene 1: "{uor_id} | Video Title / {sc_id} / EAR: {ear_verb}"
-  • RYO scenes: "TERM IN CAPS / definition line 1 / definition line 2" (3–5 lines, structured)
-  • ARIA scenes: "Aria's Question: / [one-line question]" or "Aria's Reaction: / [one-line comment]"
-  • MOTION scenes: structured label–value pairs or numbered list from the slide (4–6 lines)
-  • BOTH scenes: "KEY PRINCIPLES: / • bullet 1 / • bullet 2 / • bullet 3"
+On-Screen Text — MULTI-LINE structured text (use / for line breaks):
+  • Scene 1: "{uor_id} | [Video Title] / {sc_id} / EAR: {ear_verb}"
+  • RYO scenes: "TERM / definition line 1 / definition line 2" (3–5 lines)
+  • ARIA: "Aria's Question: / [question]" or "Aria's Reaction: / [remark]"
+  • MOTION: structured label-value pairs (4–6 lines)
+  • BOTH: "KEY PRINCIPLES: / • bullet 1 / • bullet 2 / • bullet 3"
 
-Voice Over — 2–3 sentences max. Conversational but precise. Every word must be grounded in the SOURCE SLIDE TEXT.
+Voice Over — 2–4 sentences. Precise, rich, professional. Use domain knowledge to explain well.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT — produce a markdown table with exactly 8 rows and 5 columns:
+| # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
 
 After the table, on a new line write:
 SLIDE_REFS_USED: [comma-separated slide numbers you referenced, in ascending order]"""
@@ -83,16 +103,17 @@ UOR Title: {uor_title}
 Sub-Competency: {sc_text}
 Question Type: {question_type}
 
-SOURCE SLIDE TEXT (the ONLY content you may use):
+SOURCE SLIDES — mandatory curriculum (correct answers must align with this):
 {slide_excerpts}
 
-KEY TERMS (all correct answers must come from these or the slide text):
+KEY TERMS (must appear in correct answer or question):
 {key_terms}
 
-RULES — STRICTLY ENFORCED:
-1. Every option, answer, and explanation must come directly from the SOURCE SLIDE TEXT.
-2. Do NOT introduce any fact, example, regulation, or company not in the slide text.
-3. Distractors must also be plausible but clearly wrong based on the slides.
+RULES:
+1. The correct answer and explanation must accurately reflect the SOURCE SLIDES and sound capital markets knowledge.
+2. Distractors (wrong options) should be plausible real-world alternatives — you may draw on domain knowledge for these.
+3. Do NOT contradict the slide content in the correct answer.
+4. Every key term above should appear somewhere in the question or answer choices.
 
 Write ONE {question_type} question using this format:
 
@@ -205,18 +226,19 @@ ORIGINAL SCRIPT:
 REVIEWER COMMENTS / REQUESTED CHANGES:
 {reviewer_comments}
 
-SOURCE SLIDE TEXT (the ONLY content you may add or draw from):
+SOURCE SLIDES (mandatory curriculum — all concepts must be covered):
 {plan_item["slide_excerpts"][:6000]}
 
-RULES — STRICTLY ENFORCED:
+RULES:
 1. Apply the reviewer's requested changes faithfully.
-2. Every fact, term, and example you add or keep must come from the SOURCE SLIDE TEXT.
-3. Do NOT introduce any concept, person, company, or regulation not in the slide text.
-4. Slide references must remain in ascending order.
-5. Keep the same 8-scene markdown table format:
-   | # | Character | Visual Cue | On-Screen Text | Voice Over |
-6. Preserve RYO (dry wit, expert mentor) and ARIA (curious analyst, comic timing) voices.
-7. Keep Voice Over to 2–3 sentences per scene. On-Screen Text to 5 words max.
+2. All topics and key terms from the SOURCE SLIDES must still be present after revision.
+3. You MAY use accurate capital markets domain knowledge to enrich explanations.
+4. Do NOT introduce factual errors or fabricate regulations/companies/numbers.
+5. Slide references must remain in ascending order.
+6. Keep the same 8-scene markdown table format:
+   | # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
+7. Preserve RYO (expert/mentor, dry wit) and ARIA (curious analyst, comic timing) voices.
+8. Visual Cue: 2–4 sentence production brief. On-Screen Text: multi-line with / separators.
 
 Output ONLY the revised table, then on a new line:
 SLIDE_REFS_USED: [comma-separated slide numbers in ascending order]"""
@@ -234,14 +256,14 @@ ORIGINAL QUESTION:
 REVIEWER COMMENTS / REQUESTED CHANGES:
 {reviewer_comments}
 
-SOURCE SLIDE TEXT (the ONLY content you may draw from):
+SOURCE SLIDES (mandatory curriculum):
 {plan_item["slide_excerpts"][:5000]}
 
-RULES — STRICTLY ENFORCED:
+RULES:
 1. Apply the reviewer's requested changes faithfully.
-2. Every option, answer, and explanation must come from the SOURCE SLIDE TEXT.
-3. Keep the same question format as the original.
-4. Do NOT introduce any fact or example not in the slide text.
+2. Questions and answers must be grounded in the SOURCE SLIDES.
+3. You may use domain knowledge for plausible distractors, clearly wrong but realistic.
+4. Keep the same question format as the original.
 
 Output ONLY the revised question, then:
 SLIDE_REFS_USED: [slide numbers, ascending order]"""
