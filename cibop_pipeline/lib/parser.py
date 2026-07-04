@@ -6,24 +6,44 @@ import openpyxl
 from pptx import Presentation
 
 
+def _extract_shape_texts(shape, texts: list) -> None:
+    """Recursively extract text from a shape, including grouped sub-shapes."""
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    # Recurse into group shapes (the most common cause of missed content)
+    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        for sub_shape in shape.shapes:
+            _extract_shape_texts(sub_shape, texts)
+        return
+
+    # Text frames
+    if shape.has_text_frame:
+        for para in shape.text_frame.paragraphs:
+            line = " ".join(r.text.strip() for r in para.runs if r.text.strip())
+            if line:
+                texts.append(line)
+
+    # Tables
+    if shape.has_table:
+        for row in shape.table.rows:
+            cells = [c.text.strip() for c in row.cells if c.text.strip()]
+            if cells:
+                texts.append(" | ".join(cells))
+
+
 def extract_slides_text(pptx_bytes: bytes) -> dict[int, str]:
-    """Return {slide_number: text} from a PPTX file."""
+    """Return {slide_number: text} from a PPTX file.
+
+    Recursively extracts text from grouped shapes, which is essential for
+    slides built using Google Slides or PowerPoint shape groups — the most
+    common reason slide content was silently missing.
+    """
     prs = Presentation(io.BytesIO(pptx_bytes))
     slides = {}
     for i, slide in enumerate(prs.slides, start=1):
         texts = []
         for shape in slide.shapes:
-            if shape.has_text_frame:
-                for para in shape.text_frame.paragraphs:
-                    line = " ".join(r.text.strip() for r in para.runs if r.text.strip())
-                    if line:
-                        texts.append(line)
-            # Also handle tables inside slides
-            if shape.has_table:
-                for row in shape.table.rows:
-                    cells = [c.text.strip() for c in row.cells if c.text.strip()]
-                    if cells:
-                        texts.append(" | ".join(cells))
+            _extract_shape_texts(shape, texts)
         if texts:
             slides[i] = "\n".join(texts)
         else:
