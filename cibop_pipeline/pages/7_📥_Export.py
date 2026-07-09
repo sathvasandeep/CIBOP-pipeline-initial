@@ -6,6 +6,11 @@ import streamlit as st
 from lib.db import get_generated, get_plan_items, get_review, get_all_audits_for_topic
 from lib.sidebar import render_topic_selector
 
+
+def _nkey(s):
+    """Natural sort key so UOR order is numeric not alphabetic."""
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(s))]
+
 st.set_page_config(page_title="Export — CIBOP", layout="wide")
 render_topic_selector()
 st.title("📥 Export")
@@ -29,8 +34,11 @@ if not generated:
 
 # ── Export options ─────────────────────────────────────────────────────────────
 st.markdown("### Export Options")
-include_unreviewed = st.checkbox("Include content not yet reviewed", value=False)
-include_failed     = st.checkbox("Include content that failed audit (<80%)", value=False)
+st.info(
+    "**Human approval is the export gate.** Only scripts marked ✅ Approved in Review "
+    "are included. Rejected or unreviewed scripts are excluded. "
+    "Audit scores are shown for reference only — they do not block export."
+)
 st.markdown("---")
 
 
@@ -217,7 +225,7 @@ def _add_script_table(doc, script_text: str, audit: dict | None):
 # Video DOCX builder
 # ══════════════════════════════════════════════════════════════════════════════
 
-def build_video_docx(items, plan_map, audit_map, include_unreviewed, include_failed):
+def build_video_docx(items, plan_map, audit_map):
     from docx import Document
     from docx.shared import Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -243,20 +251,16 @@ def build_video_docx(items, plan_map, audit_map, include_unreviewed, include_fai
 
     current_uor = None
 
-    for item in sorted(items, key=lambda x: (x["uor_id"], x["sc_id"])):
+    for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"]))):
         if item["content_type"] != "video_script":
             continue
 
         review = get_review(item["id"])
         audit  = audit_map.get(item["id"])
 
-        if not include_unreviewed and not review:
+        # Export only human-approved scripts
+        if not review or not review.get("approved"):
             continue
-        if not include_failed and audit:
-            ov = (audit.get("coverage_score", 0) + audit.get("order_score", 0) +
-                  audit.get("fidelity_score", 0)) / 3
-            if ov < 80:
-                continue
 
         # UOR header (new page per UOR)
         if item["uor_id"] != current_uor:
@@ -298,7 +302,7 @@ def build_video_docx(items, plan_map, audit_map, include_unreviewed, include_fai
 # Assessment DOCX builder
 # ══════════════════════════════════════════════════════════════════════════════
 
-def build_assessment_docx(items, plan_map, audit_map, include_unreviewed, include_failed):
+def build_assessment_docx(items, plan_map, audit_map):
     from docx import Document
     from docx.shared import Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -327,20 +331,16 @@ def build_assessment_docx(items, plan_map, audit_map, include_unreviewed, includ
     q_num = 1
     current_uor = None
 
-    for item in sorted(items, key=lambda x: (x["uor_id"], x["sc_id"])):
+    for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"]))):
         if item["content_type"] != "assessment":
             continue
 
         review = get_review(item["id"])
         audit  = audit_map.get(item["id"])
 
-        if not include_unreviewed and not review:
+        # Export only human-approved scripts
+        if not review or not review.get("approved"):
             continue
-        if not include_failed and audit:
-            ov = (audit.get("coverage_score", 0) + audit.get("order_score", 0) +
-                  audit.get("fidelity_score", 0)) / 3
-            if ov < 80:
-                continue
 
         if item["uor_id"] != current_uor:
             current_uor = item["uor_id"]
@@ -401,6 +401,19 @@ def build_assessment_docx(items, plan_map, audit_map, include_unreviewed, includ
 
 plan_map = {f"{i['uor_id']}_{i['sc_id']}": i for i in plan_items}
 
+# ── Approval summary metrics ───────────────────────────────────────────────────
+all_reviews_export = [get_review(g["id"]) for g in generated]
+approved_count = sum(1 for r in all_reviews_export if r and r.get("approved"))
+rejected_count = sum(1 for r in all_reviews_export if r and not r.get("approved"))
+pending_count  = len(all_reviews_export) - approved_count - rejected_count
+
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Total Scripts", len(generated))
+m2.metric("✅ Will Export", approved_count)
+m3.metric("❌ Excluded (Rejected)", rejected_count)
+m4.metric("⏳ Excluded (Pending)", pending_count)
+st.markdown("---")
+
 col1, col2 = st.columns(2)
 
 with col1:
@@ -410,8 +423,7 @@ with col1:
     if st.button("Build Video DOCX", type="primary"):
         with st.spinner("Building document…"):
             try:
-                buf = build_video_docx(generated, plan_map, audit_data,
-                                       include_unreviewed, include_failed)
+                buf = build_video_docx(generated, plan_map, audit_data)
                 st.download_button(
                     label="⬇️ Download Video Production DOCX",
                     data=buf,
@@ -430,8 +442,7 @@ with col2:
     if st.button("Build Assessment DOCX", type="primary"):
         with st.spinner("Building document…"):
             try:
-                buf = build_assessment_docx(generated, plan_map, audit_data,
-                                            include_unreviewed, include_failed)
+                buf = build_assessment_docx(generated, plan_map, audit_data)
                 st.download_button(
                     label="⬇️ Download Assessment DOCX",
                     data=buf,
@@ -449,22 +460,25 @@ st.markdown("---")
 st.markdown("### Content Status Summary")
 
 data = []
-for g in generated:
+for g in sorted(generated, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"]))):
     review  = get_review(g["id"])
     audit   = audit_data.get(g["id"])
     overall = None
     if audit:
         overall = (audit.get("coverage_score", 0) + audit.get("order_score", 0) +
                    audit.get("fidelity_score", 0)) / 3
+
+    approved = review and review.get("approved")
+    rejected = review and not review.get("approved")
+    review_status = "✅ Approved" if approved else ("❌ Rejected" if rejected else "⏳ Pending")
+
     data.append({
-        "UOR":         g["uor_id"],
-        "SC":          g["sc_id"],
-        "Type":        "📹 Video" if g["content_type"] == "video_script" else "📝 Assessment",
-        "Audit Score": f"{overall:.0f}%" if overall is not None else "—",
-        "Pass":        "✅" if overall and overall >= 80 else ("❌" if overall else "—"),
-        "Review":      ("✅ Approved" if (review and review.get("approved"))
-                        else ("❌ Rejected" if (review and not review.get("approved"))
-                              else "⏳ Pending")),
+        "UOR":          g["uor_id"],
+        "SC":           g["sc_id"],
+        "Type":         "📹 Video" if g["content_type"] == "video_script" else "📝 Assessment",
+        "Audit Score":  f"{overall:.0f}%" if overall is not None else "—",
+        "Review":       review_status,
+        "Export?":      "✅ Yes" if approved else "❌ No",
     })
 
 if data:
