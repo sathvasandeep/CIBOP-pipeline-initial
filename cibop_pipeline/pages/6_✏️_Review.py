@@ -254,13 +254,13 @@ def _compile_from_scenes(item_id: str, df) -> str:
 
 
 def _clear_scene_editor(item_id: str, df):
-    """Remove all scene_ session state keys for this item."""
+    """Remove scene_ session state keys for this item.
+    Does NOT touch edit_{item_id} — callers set that explicitly before calling this."""
     if df is None:
         return
     for r_idx in range(len(df)):
         for col in df.columns:
             st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}", None)
-    st.session_state.pop(f"edit_{item_id}", None)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -438,7 +438,10 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                             save_audit(item["id"], result["coverage_score"],
                                        result["order_score"], result["fidelity_score"],
                                        result.get("flags", []))
-                            df_tmp, _, _ = parse_script_table(current_text)
+                            # Explicitly set session state to revised text so the
+                            # text area widget picks it up on rerun (popping is unreliable)
+                            st.session_state[f"edit_{item['id']}"] = revised
+                            df_tmp, _, _ = parse_script_table(revised)
                             _clear_scene_editor(item["id"], df_tmp)
                             st.success("✅ AI revision applied and re-audited.")
                             st.rerun()
@@ -459,6 +462,8 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                                    result["order_score"], result["fidelity_score"],
                                    result.get("flags", []))
                     save_review(item["id"], reviewer_name, raw, False, comments)
+                    # Keep session state set to what was saved so it persists on rerun
+                    st.session_state[f"edit_{item['id']}"] = raw
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
                     st.success("Saved and re-audited.")
@@ -473,6 +478,8 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                     raw = st.session_state.get(f"edit_{item['id']}", current_text)
                     update_generated_text(item["id"], raw)
                     save_review(item["id"], reviewer_name, raw, True, comments)
+                    # Keep session state set to what was saved so it persists on rerun
+                    st.session_state[f"edit_{item['id']}"] = raw
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
                     st.success("✅ Approved!")
