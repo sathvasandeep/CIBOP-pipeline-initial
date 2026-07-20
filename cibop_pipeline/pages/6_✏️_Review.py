@@ -325,6 +325,14 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
     if review:
         approved_badge = " | ✅ Approved" if review.get("approved") else " | ❌ Rejected"
 
+    # ── Pre-set widget key from pending AI revision ────────────────────────────
+    # This MUST happen before the outer expander opens (i.e. before ANY widget
+    # with key=f"edit_{item['id']}" is instantiated).  Setting a session_state
+    # key BEFORE the widget renders is always allowed; setting it AFTER is not.
+    _pending_key = f"_pending_{item['id']}"
+    if _pending_key in st.session_state:
+        st.session_state[f"edit_{item['id']}"] = st.session_state.pop(_pending_key)
+
     with st.expander(
         f"**{item['uor_id']} / {item['sc_id']}** — {score_badge}{approved_badge}",
         expanded=(not review)
@@ -373,7 +381,9 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                         if st.button("🔄 Apply Edits to Table", key=f"apply_scenes_{item['id']}",
                                      type="primary"):
                             compiled = _compile_from_scenes(item["id"], df_edit)
-                            st.session_state[f"edit_{item['id']}"] = compiled
+                            # Use _pending_ staging key — cannot set widget key after render
+                            st.session_state[f"_pending_{item['id']}"] = compiled
+                            _clear_scene_editor(item["id"], df_edit)
                             st.success("✅ Scene edits applied — now Save or Approve below.")
                             st.rerun()
                     with btn_reset:
@@ -387,33 +397,21 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
             # ── RAW MARKDOWN EDITOR (Advanced) ────────────────────────────────
             with st.expander("🔧 Advanced — Raw Markdown Table", expanded=False):
                 st.caption("Direct markdown edit — useful for precise formatting fixes.")
-                # If AI revision just ran, a _pending_ key carries the new text.
-                # Pop it and clear the widget key so the text area re-initialises
-                # from value= rather than stale widget state.
-                _pending_key = f"_pending_{item['id']}"
-                if _pending_key in st.session_state:
-                    _display = st.session_state.pop(_pending_key)
-                    st.session_state.pop(f"edit_{item['id']}", None)
-                else:
-                    _display = current_text
+                # value= is only used when the key is NOT in session_state.
+                # When _pending_ was resolved above, session_state already holds
+                # the AI-revised text and Streamlit will display that instead.
                 st.text_area(
                     "Raw markdown table:",
-                    value=_display,
+                    value=current_text,
                     height=350,
                     key=f"edit_{item['id']}"
                 )
 
         else:
             # Assessment — plain text
-            _pending_key = f"_pending_{item['id']}"
-            if _pending_key in st.session_state:
-                _display = st.session_state.pop(_pending_key)
-                st.session_state.pop(f"edit_{item['id']}", None)
-            else:
-                _display = current_text
             st.text_area(
                 "Assessment question (edit directly):",
-                value=_display,
+                value=current_text,
                 height=300,
                 key=f"edit_{item['id']}"
             )
