@@ -2,6 +2,7 @@
 
 import re
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 
 
@@ -334,9 +335,25 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
     # Clean up any leftover _pending_ keys from the old pattern
     st.session_state.pop(f"_pending_{item['id']}", None)
 
+    # ── Focus / expand after AI edit ─────────────────────────────────────────
+    # _expand_{id} is set by the AI-edit handler so this item re-opens after
+    # the rerun.  _focus_{id} triggers a JS scroll to bring it into view.
+    _anchor_id   = f"rev_anchor_{item['id']}"
+    _expand_flag = st.session_state.pop(f"_expand_{item['id']}", False)
+    _focus_flag  = st.session_state.pop(f"_focus_{item['id']}", False)
+
+    # Invisible anchor that JS can scroll to
+    st.markdown(f'<div id="{_anchor_id}"></div>', unsafe_allow_html=True)
+    if _focus_flag:
+        components.html(
+            f'<script>window.parent.document.getElementById("{_anchor_id}")'
+            f'.scrollIntoView({{behavior:"smooth",block:"start"}});</script>',
+            height=0,
+        )
+
     with st.expander(
         f"**{item['uor_id']} / {item['sc_id']}** — {score_badge}{approved_badge}",
-        expanded=(not review)
+        expanded=_expand_flag,   # False by default; True only after AI edit
     ):
         # ── Audit flags ────────────────────────────────────────────────────────
         if audit:
@@ -457,6 +474,9 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                             # area widget that re-initialises from value=current_text
                             # (which will be the revised text, just saved to DB).
                             st.session_state[f"_ver_{item['id']}"] = _ver + 1
+                            # Re-open this item's expander and scroll to it
+                            st.session_state[f"_expand_{item['id']}"] = True
+                            st.session_state[f"_focus_{item['id']}"]  = True
                             df_tmp, _, _ = parse_script_table(revised)
                             _clear_scene_editor(item["id"], df_tmp)
                             st.success("✅ AI revision applied and re-audited.")

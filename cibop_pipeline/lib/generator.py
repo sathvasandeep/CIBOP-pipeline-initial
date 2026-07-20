@@ -192,6 +192,12 @@ def generate_video_script(plan_item: dict) -> tuple[str, list[int]]:
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )
+    if resp.stop_reason == "max_tokens":
+        raise ValueError(
+            "⚠️ The generated script was cut off — output exceeded the token limit. "
+            "The script may be incomplete (missing scenes or empty cells). "
+            "Try re-generating, or reduce the number of key terms in the plan."
+        )
     text = resp.content[0].text
     slide_refs = _extract_slide_refs(text)
     return text, slide_refs
@@ -214,6 +220,11 @@ def generate_assessment_question(plan_item: dict) -> tuple[str, list[int]]:
         max_tokens=1200,
         messages=[{"role": "user", "content": prompt}]
     )
+    if resp.stop_reason == "max_tokens":
+        raise ValueError(
+            "⚠️ The assessment question was cut off — output exceeded the token limit. "
+            "Try re-generating."
+        )
     text = resp.content[0].text
     slide_refs = _extract_slide_refs(text)
     return text, slide_refs
@@ -246,15 +257,21 @@ SOURCE SLIDES (mandatory curriculum — all concepts must be covered):
 {plan_item["slide_excerpts"][:6000]}
 
 RULES:
-1. Apply the reviewer's requested changes faithfully.
+1. Apply the reviewer's requested changes faithfully and completely.
+   — If the comment refers to a SPECIFIC SCENE (e.g. "add VO to scene 6"), modify ONLY that
+     cell/column in that row. Copy every other row and cell EXACTLY from the original.
+   — If the comment is general (e.g. "tighten the language"), revise all relevant scenes.
+   — NEVER leave a cell empty if the reviewer explicitly asks you to add content to it.
+   — NEVER delete existing content from scenes that were not mentioned in the comments.
 2. All topics and key terms from the SOURCE SLIDES must still be present after revision.
 3. You MAY use accurate capital markets domain knowledge to enrich explanations.
 4. Do NOT introduce factual errors or fabricate regulations/companies/numbers.
 5. Slide references must remain in ascending order.
-6. Keep the same 8-scene markdown table format:
+6. Keep the same 8-scene markdown table format — output ALL 8 rows every time:
    | # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
 7. Preserve RYO (expert/mentor, dry wit) and ARIA (curious analyst, comic timing) voices.
 8. Visual Cue: 2–4 sentence production brief. On-Screen Text: multi-line with / separators.
+9. Voice Over: 3–5 rich, spoken sentences. Never output an empty Voice Over cell.
 
 Output ONLY the revised table, then on a new line:
 SLIDE_REFS_USED: [comma-separated slide numbers in ascending order]"""
@@ -289,6 +306,12 @@ SLIDE_REFS_USED: [slide numbers, ascending order]"""
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )
+    if resp.stop_reason == "max_tokens":
+        raise ValueError(
+            "⚠️ The AI revision was cut off — output exceeded the token limit and the script "
+            "is incomplete (likely missing scenes or empty Voice Over / On-Screen Text cells). "
+            "Try breaking your comment into smaller targeted changes and re-running AI Edits."
+        )
     text = resp.content[0].text
     slide_refs = _extract_slide_refs(text)
     return text, slide_refs
