@@ -175,8 +175,12 @@ def _col_role(col: str) -> str:
     return "other"
 
 
-def render_scene_editor(item_id: str, df):
-    """Show a scene-by-scene form. Edits are stored in scene_* session state keys."""
+def render_scene_editor(item_id: str, df, ver: int = 0):
+    """Show a scene-by-scene form. Edits are stored in versioned scene_* session state keys.
+
+    The ver parameter must match the _ver_{item_id} counter so that stale frontend
+    widget state from a previous render is never re-used (same trick as _ta_key).
+    """
     if df is None:
         st.warning("Cannot parse table for scene editing.")
         return
@@ -194,7 +198,7 @@ def render_scene_editor(item_id: str, df):
 
             for col in cols:
                 role = _col_role(col)
-                key  = f"scene_{item_id}_{r_idx}_{col}"
+                key  = f"scene_{item_id}_{r_idx}_{col}_v{ver}"   # versioned
                 raw_val = str(row[col])
 
                 if role == "num":
@@ -227,8 +231,8 @@ def render_scene_editor(item_id: str, df):
                         st.text_area(col, value=raw_val, height=80, key=key)
 
 
-def _compile_from_scenes(item_id: str, df) -> str:
-    """Compile scene_ session state back into a markdown table string."""
+def _compile_from_scenes(item_id: str, df, ver: int = 0) -> str:
+    """Compile versioned scene_ session state back into a markdown table string."""
     if df is None:
         return ""
     cols = list(df.columns)
@@ -239,7 +243,7 @@ def _compile_from_scenes(item_id: str, df) -> str:
     for r_idx, orig_row in df.iterrows():
         cells = []
         for col in cols:
-            key = f"scene_{item_id}_{r_idx}_{col}"
+            key = f"scene_{item_id}_{r_idx}_{col}_v{ver}"   # versioned
             if key in st.session_state:
                 val = str(st.session_state[key])
                 if _col_role(col) == "ost":
@@ -254,13 +258,13 @@ def _compile_from_scenes(item_id: str, df) -> str:
     return "\n".join([header, sep] + rows)
 
 
-def _clear_scene_editor(item_id: str, df):
-    """Remove scene_ session state keys for this item."""
+def _clear_scene_editor(item_id: str, df, ver: int = 0):
+    """Remove versioned scene_ session state keys for this item/version."""
     if df is None:
         return
     for r_idx in range(len(df)):
         for col in df.columns:
-            st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}", None)
+            st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}_v{ver}", None)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -392,26 +396,26 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                         "Edit each scene below. Click **🔄 Apply Edits to Table** when done, "
                         "then **💾 Save & Re-audit** or **✅ Approve**."
                     )
-                    render_scene_editor(item["id"], df_edit)
+                    render_scene_editor(item["id"], df_edit, _ver)
                     st.markdown("---")
                     btn_apply, btn_reset = st.columns([3, 1])
                     with btn_apply:
                         if st.button("🔄 Apply Edits to Table", key=f"apply_scenes_{item['id']}",
                                      type="primary"):
-                            compiled = _compile_from_scenes(item["id"], df_edit)
-                            # Increment version and pre-set the new text area key
-                            # with the compiled markdown so it appears immediately.
+                            compiled = _compile_from_scenes(item["id"], df_edit, _ver)
+                            # Increment version so both the text area and scene editor
+                            # get fresh widget keys on the next render.
                             _new_ver = _ver + 1
                             _new_ta_key = f"edit_{item['id']}_v{_new_ver}"
                             st.session_state[f"_ver_{item['id']}"] = _new_ver
                             st.session_state[_new_ta_key] = compiled
-                            _clear_scene_editor(item["id"], df_edit)
                             st.success("✅ Scene edits applied — now Save or Approve below.")
                             st.rerun()
                     with btn_reset:
                         if st.button("↩️ Reset", key=f"reset_scenes_{item['id']}",
                                      help="Discard all scene edits"):
-                            _clear_scene_editor(item["id"], df_edit)
+                            # Clear current-version scene keys so they reinit from df_edit
+                            _clear_scene_editor(item["id"], df_edit, _ver)
                             st.rerun()
                 else:
                     st.warning("Could not parse table for scene editing.")
@@ -470,15 +474,12 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                             save_audit(item["id"], result["coverage_score"],
                                        result["order_score"], result["fidelity_score"],
                                        result.get("flags", []))
-                            # Increment version so the next render creates a fresh text
-                            # area widget that re-initialises from value=current_text
-                            # (which will be the revised text, just saved to DB).
+                            # Increment version — fresh widget keys on next render means
+                            # both the text area AND scene editor reinit from DB text.
                             st.session_state[f"_ver_{item['id']}"] = _ver + 1
                             # Re-open this item's expander and scroll to it
                             st.session_state[f"_expand_{item['id']}"] = True
                             st.session_state[f"_focus_{item['id']}"]  = True
-                            df_tmp, _, _ = parse_script_table(revised)
-                            _clear_scene_editor(item["id"], df_tmp)
                             st.success("✅ AI revision applied and re-audited.")
                             st.rerun()
                         except Exception as e:
@@ -498,9 +499,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                                    result["order_score"], result["fidelity_score"],
                                    result.get("flags", []))
                     save_review(item["id"], reviewer_name, raw, False, comments)
-                    df_tmp, _, _ = parse_script_table(raw)
-                    _clear_scene_editor(item["id"], df_tmp)
-                    # Increment version so next render re-initialises the text area
+                    # Increment version — text area + scene editor both reinit from DB
                     st.session_state[f"_ver_{item['id']}"] = _ver + 1
                     st.success("Saved and re-audited.")
                     st.rerun()
@@ -514,9 +513,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                     raw = st.session_state.get(_ta_key, current_text)
                     update_generated_text(item["id"], raw)
                     save_review(item["id"], reviewer_name, raw, True, comments)
-                    df_tmp, _, _ = parse_script_table(raw)
-                    _clear_scene_editor(item["id"], df_tmp)
-                    # Increment version so next render re-initialises the text area
+                    # Increment version — text area + scene editor both reinit from DB
                     st.session_state[f"_ver_{item['id']}"] = _ver + 1
                     st.success("✅ Approved!")
                     st.rerun()
@@ -529,8 +526,6 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 else:
                     raw = st.session_state.get(_ta_key, current_text)
                     save_review(item["id"], reviewer_name, raw, False, f"REJECTED: {comments}")
-                    df_tmp, _, _ = parse_script_table(raw)
-                    _clear_scene_editor(item["id"], df_tmp)
                     st.warning("Marked as rejected.")
                     st.rerun()
 
