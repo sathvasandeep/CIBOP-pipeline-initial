@@ -254,13 +254,12 @@ def _compile_from_scenes(item_id: str, df) -> str:
 
 
 def _clear_scene_editor(item_id: str, df):
-    """Remove scene_ and edit_ session state keys for this item."""
+    """Remove scene_ session state keys for this item."""
     if df is None:
         return
     for r_idx in range(len(df)):
         for col in df.columns:
             st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}", None)
-    st.session_state.pop(f"edit_{item_id}", None)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -325,13 +324,15 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
     if review:
         approved_badge = " | ✅ Approved" if review.get("approved") else " | ❌ Rejected"
 
-    # ── Pre-set widget key from pending AI revision ────────────────────────────
-    # This MUST happen before the outer expander opens (i.e. before ANY widget
-    # with key=f"edit_{item['id']}" is instantiated).  Setting a session_state
-    # key BEFORE the widget renders is always allowed; setting it AFTER is not.
-    _pending_key = f"_pending_{item['id']}"
-    if _pending_key in st.session_state:
-        st.session_state[f"edit_{item['id']}"] = st.session_state.pop(_pending_key)
+    # ── Versioned text-area key ────────────────────────────────────────────────
+    # Each action (AI edit, Save, Apply Edits) increments _ver_{id}.
+    # The new version number produces a brand-new widget key that has no
+    # stale frontend state, so the text area always re-initialises from
+    # value=current_text (which is always correct from the DB after any save).
+    _ver     = st.session_state.get(f"_ver_{item['id']}", 0)
+    _ta_key  = f"edit_{item['id']}_v{_ver}"
+    # Clean up any leftover _pending_ keys from the old pattern
+    st.session_state.pop(f"_pending_{item['id']}", None)
 
     with st.expander(
         f"**{item['uor_id']} / {item['sc_id']}** — {score_badge}{approved_badge}",
@@ -381,8 +382,12 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                         if st.button("🔄 Apply Edits to Table", key=f"apply_scenes_{item['id']}",
                                      type="primary"):
                             compiled = _compile_from_scenes(item["id"], df_edit)
-                            # Use _pending_ staging key — cannot set widget key after render
-                            st.session_state[f"_pending_{item['id']}"] = compiled
+                            # Increment version and pre-set the new text area key
+                            # with the compiled markdown so it appears immediately.
+                            _new_ver = _ver + 1
+                            _new_ta_key = f"edit_{item['id']}_v{_new_ver}"
+                            st.session_state[f"_ver_{item['id']}"] = _new_ver
+                            st.session_state[_new_ta_key] = compiled
                             _clear_scene_editor(item["id"], df_edit)
                             st.success("✅ Scene edits applied — now Save or Approve below.")
                             st.rerun()
@@ -397,14 +402,11 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
             # ── RAW MARKDOWN EDITOR (Advanced) ────────────────────────────────
             with st.expander("🔧 Advanced — Raw Markdown Table", expanded=False):
                 st.caption("Direct markdown edit — useful for precise formatting fixes.")
-                # value= is only used when the key is NOT in session_state.
-                # When _pending_ was resolved above, session_state already holds
-                # the AI-revised text and Streamlit will display that instead.
                 st.text_area(
                     "Raw markdown table:",
                     value=current_text,
                     height=350,
-                    key=f"edit_{item['id']}"
+                    key=_ta_key
                 )
 
         else:
@@ -413,7 +415,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 "Assessment question (edit directly):",
                 value=current_text,
                 height=300,
-                key=f"edit_{item['id']}"
+                key=_ta_key
             )
 
         st.markdown("---")
@@ -442,7 +444,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 else:
                     with st.spinner("🤖 Claude is revising…"):
                         try:
-                            source = st.session_state.get(f"edit_{item['id']}", current_text)
+                            source = st.session_state.get(_ta_key, current_text)
                             revised, new_refs = revise_content(plan_item, source, comments, ct)
                             update_generated_text(item["id"], revised)
                             save_review(item["id"], reviewer_name, revised, False,
@@ -451,11 +453,10 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                             save_audit(item["id"], result["coverage_score"],
                                        result["order_score"], result["fidelity_score"],
                                        result.get("flags", []))
-                            # Use a staging key — cannot set a widget-bound key
-                            # after the widget has already been instantiated this run.
-                            # The _pending_ key is picked up before the text area
-                            # renders on the next run.
-                            st.session_state[f"_pending_{item['id']}"] = revised
+                            # Increment version so the next render creates a fresh text
+                            # area widget that re-initialises from value=current_text
+                            # (which will be the revised text, just saved to DB).
+                            st.session_state[f"_ver_{item['id']}"] = _ver + 1
                             df_tmp, _, _ = parse_script_table(revised)
                             _clear_scene_editor(item["id"], df_tmp)
                             st.success("✅ AI revision applied and re-audited.")
@@ -469,7 +470,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 if not reviewer_name:
                     st.error("Enter your name at the top.")
                 else:
-                    raw = st.session_state.get(f"edit_{item['id']}", current_text)
+                    raw = st.session_state.get(_ta_key, current_text)
                     update_generated_text(item["id"], raw)
                     if plan_item:
                         result = audit_content(plan_item, raw, item.get("slide_refs_used", []))
@@ -479,6 +480,8 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                     save_review(item["id"], reviewer_name, raw, False, comments)
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
+                    # Increment version so next render re-initialises the text area
+                    st.session_state[f"_ver_{item['id']}"] = _ver + 1
                     st.success("Saved and re-audited.")
                     st.rerun()
 
@@ -488,11 +491,13 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 if not reviewer_name:
                     st.error("Enter your name at the top.")
                 else:
-                    raw = st.session_state.get(f"edit_{item['id']}", current_text)
+                    raw = st.session_state.get(_ta_key, current_text)
                     update_generated_text(item["id"], raw)
                     save_review(item["id"], reviewer_name, raw, True, comments)
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
+                    # Increment version so next render re-initialises the text area
+                    st.session_state[f"_ver_{item['id']}"] = _ver + 1
                     st.success("✅ Approved!")
                     st.rerun()
 
@@ -502,7 +507,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                 if not reviewer_name:
                     st.error("Enter your name at the top.")
                 else:
-                    raw = st.session_state.get(f"edit_{item['id']}", current_text)
+                    raw = st.session_state.get(_ta_key, current_text)
                     save_review(item["id"], reviewer_name, raw, False, f"REJECTED: {comments}")
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)

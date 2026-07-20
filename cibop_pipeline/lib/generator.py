@@ -189,7 +189,7 @@ def generate_video_script(plan_item: dict) -> tuple[str, list[int]]:
 
     resp = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )
     text = resp.content[0].text
@@ -286,7 +286,7 @@ SLIDE_REFS_USED: [slide numbers, ascending order]"""
 
     resp = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )
     text = resp.content[0].text
