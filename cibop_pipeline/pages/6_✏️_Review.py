@@ -254,13 +254,13 @@ def _compile_from_scenes(item_id: str, df) -> str:
 
 
 def _clear_scene_editor(item_id: str, df):
-    """Remove scene_ session state keys for this item.
-    Does NOT touch edit_{item_id} — callers set that explicitly before calling this."""
+    """Remove scene_ and edit_ session state keys for this item."""
     if df is None:
         return
     for r_idx in range(len(df)):
         for col in df.columns:
             st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}", None)
+    st.session_state.pop(f"edit_{item_id}", None)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -387,18 +387,33 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
             # ── RAW MARKDOWN EDITOR (Advanced) ────────────────────────────────
             with st.expander("🔧 Advanced — Raw Markdown Table", expanded=False):
                 st.caption("Direct markdown edit — useful for precise formatting fixes.")
+                # If AI revision just ran, a _pending_ key carries the new text.
+                # Pop it and clear the widget key so the text area re-initialises
+                # from value= rather than stale widget state.
+                _pending_key = f"_pending_{item['id']}"
+                if _pending_key in st.session_state:
+                    _display = st.session_state.pop(_pending_key)
+                    st.session_state.pop(f"edit_{item['id']}", None)
+                else:
+                    _display = current_text
                 st.text_area(
                     "Raw markdown table:",
-                    value=current_text,
+                    value=_display,
                     height=350,
                     key=f"edit_{item['id']}"
                 )
 
         else:
             # Assessment — plain text
+            _pending_key = f"_pending_{item['id']}"
+            if _pending_key in st.session_state:
+                _display = st.session_state.pop(_pending_key)
+                st.session_state.pop(f"edit_{item['id']}", None)
+            else:
+                _display = current_text
             st.text_area(
                 "Assessment question (edit directly):",
-                value=current_text,
+                value=_display,
                 height=300,
                 key=f"edit_{item['id']}"
             )
@@ -438,9 +453,11 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                             save_audit(item["id"], result["coverage_score"],
                                        result["order_score"], result["fidelity_score"],
                                        result.get("flags", []))
-                            # Explicitly set session state to revised text so the
-                            # text area widget picks it up on rerun (popping is unreliable)
-                            st.session_state[f"edit_{item['id']}"] = revised
+                            # Use a staging key — cannot set a widget-bound key
+                            # after the widget has already been instantiated this run.
+                            # The _pending_ key is picked up before the text area
+                            # renders on the next run.
+                            st.session_state[f"_pending_{item['id']}"] = revised
                             df_tmp, _, _ = parse_script_table(revised)
                             _clear_scene_editor(item["id"], df_tmp)
                             st.success("✅ AI revision applied and re-audited.")
@@ -462,8 +479,6 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                                    result["order_score"], result["fidelity_score"],
                                    result.get("flags", []))
                     save_review(item["id"], reviewer_name, raw, False, comments)
-                    # Keep session state set to what was saved so it persists on rerun
-                    st.session_state[f"edit_{item['id']}"] = raw
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
                     st.success("Saved and re-audited.")
@@ -478,8 +493,6 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
                     raw = st.session_state.get(f"edit_{item['id']}", current_text)
                     update_generated_text(item["id"], raw)
                     save_review(item["id"], reviewer_name, raw, True, comments)
-                    # Keep session state set to what was saved so it persists on rerun
-                    st.session_state[f"edit_{item['id']}"] = raw
                     df_tmp, _, _ = parse_script_table(raw)
                     _clear_scene_editor(item["id"], df_tmp)
                     st.success("✅ Approved!")
