@@ -269,6 +269,19 @@ def _clear_scene_editor(item_id: str, df, ver: int = 0):
             st.session_state.pop(f"scene_{item_id}_{r_idx}_{col}_v{ver}", None)
 
 
+def _vo_duration(script_text: str) -> float | None:
+    """Count words in all Voice Over cells and return video length in minutes at 100 wpm.
+    Returns None if the table cannot be parsed or has no VO content."""
+    df, _, _ = parse_script_table(script_text)
+    if df is None:
+        return None
+    vo_col = next((c for c in df.columns if _col_role(c) == "vo"), None)
+    if vo_col is None:
+        return None
+    total_words = sum(len(str(v).split()) for v in df[vo_col] if str(v).strip())
+    return round(total_words / 100, 1) if total_words > 0 else None
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # LOAD DATA
 # ══════════════════════════════════════════════════════════════════════════════
@@ -306,6 +319,20 @@ elif filter_status == "Approved":
     items = [g for g in items if reviews.get(g["id"]) and reviews[g["id"]].get("approved")]
 
 st.markdown(f"**Showing {len(items)} items**")
+
+# ── Duration summary for filtered items ───────────────────────────────────────
+if ct == "video_script":
+    _filtered_mins = 0.0
+    for _g in items:
+        _rev = get_review(_g["id"])
+        _txt = _rev["edited_content"] if _rev else _g["content_text"]
+        _d   = _vo_duration(_txt)
+        if _d:
+            _filtered_mins += _d
+    if _filtered_mins > 0:
+        st.caption(f"⏱ Estimated video time (shown scripts): **{_filtered_mins:.1f} min** "
+                   f"— based on Voice Over word count ÷ 100 wpm")
+
 st.markdown("---")
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -330,6 +357,14 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
     approved_badge = ""
     if review:
         approved_badge = " | ✅ Approved" if review.get("approved") else " | ❌ Rejected"
+
+    # Duration badge (video scripts only)
+    dur_badge = ""
+    if item["content_type"] == "video_script":
+        _text_for_dur = review["edited_content"] if review else item["content_text"]
+        _dur = _vo_duration(_text_for_dur)
+        if _dur is not None:
+            dur_badge = f" | ⏱ {_dur:.1f} min"
 
     # ── Versioned text-area key ────────────────────────────────────────────────
     # Each action (AI edit, Save, Apply Edits) increments _ver_{id}.
@@ -358,7 +393,7 @@ for item in sorted(items, key=lambda x: (_nkey(x["uor_id"]), _nkey(x["sc_id"])))
         )
 
     with st.expander(
-        f"**{item['uor_id']} / {item['sc_id']}** — {score_badge}{approved_badge}",
+        f"**{item['uor_id']} / {item['sc_id']}** — {score_badge}{approved_badge}{dur_badge}",
         expanded=_expand_flag,   # False by default; True only after AI edit
     ):
         # ── Audit flags ────────────────────────────────────────────────────────
@@ -542,10 +577,20 @@ approved_list = [r for r in all_reviews if r and r.get("approved")]
 rejected_list = [r for r in all_reviews if r and not r.get("approved")]
 pending_count = len(all_reviews) - len(approved_list) - len(rejected_list)
 
-col_a, col_b, col_c = st.columns(3)
+# Total video duration across ALL video scripts in this topic
+_total_mins = 0.0
+for _g, _rev in zip(generated, all_reviews):
+    if _g["content_type"] == "video_script":
+        _txt = _rev["edited_content"] if _rev else _g["content_text"]
+        _d   = _vo_duration(_txt)
+        if _d:
+            _total_mins += _d
+
+col_a, col_b, col_c, col_d = st.columns(4)
 col_a.metric("✅ Approved", len(approved_list))
 col_b.metric("❌ Rejected", len(rejected_list))
 col_c.metric("⏳ Pending", pending_count)
+col_d.metric("⏱ Total Video Time", f"{_total_mins:.1f} min" if _total_mins else "—")
 
 if len(approved_list) == len(all_reviews):
     st.success("🎉 All content approved! Go to **📥 Export** to download.")
