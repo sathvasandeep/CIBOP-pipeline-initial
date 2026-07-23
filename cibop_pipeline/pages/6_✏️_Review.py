@@ -133,7 +133,9 @@ def render_script_view(script_text: str):
             fg, bg = char_colours.get(char_val, ("#333", "#FAFAFA"))
             row_cells = ""
             for col in df.columns:
-                cell_val = str(row[col]).replace("\n", "<br>").replace("/", "<br>")
+                # Normalise line-break markers: / is canonical; \ is a model error — strip it.
+                _raw = str(row[col]).replace("\n", " / ").strip().rstrip("\\").strip()
+                cell_val = _raw.replace("/", "<br>")
                 cl = col.lower()
                 is_char = "character" in cl
                 style = (

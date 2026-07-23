@@ -95,14 +95,27 @@ Visual Cue / Animation — FULL production brief (2–4 sentences):
   • RYO/ARIA: character position, props, board writing, graphic behind them
   • BOTH: split-screen layout, what each side shows
 
-On-Screen Text — MULTI-LINE structured text (use / for line breaks):
+On-Screen Text — MULTI-LINE structured text (use / for line breaks ONLY):
+  ⚠️ Use / (forward slash) for line breaks. NEVER use \ (backslash) as a separator.
+  ⚠️ Keep OST to 4–6 short lines maximum. Do NOT put VO-style prose here.
   • Scene 1: "{uor_id} | [Video Title] / {sc_id} / EAR: {ear_verb}"
   • RYO scenes: "TERM / definition line 1 / definition line 2" (3–5 lines)
   • ARIA: "Aria's Question: / [question]" or "Aria's Reaction: / [remark]"
-  • MOTION: structured label-value pairs (4–6 lines)
+  • MOTION: structured label-value pairs (4–6 lines max — do NOT list every item)
   • BOTH: "KEY PRINCIPLES: / • bullet 1 / • bullet 2 / • bullet 3"
 
-Voice Over — 2–4 sentences. Precise, rich, professional. Use domain knowledge to explain well.
+Voice Over — SPOKEN NARRATION. 3–5 complete sentences a narrator reads aloud.
+  ⚠️ CRITICAL — Voice Over is AUDIO ONLY. It never appears on screen.
+  ⚠️ NEVER put bullet points, labels, headers, or / separators in Voice Over.
+  ⚠️ NEVER copy OST content into Voice Over. They serve DIFFERENT purposes.
+  • MOTION scenes: VO narrates/explains the animation while the audience watches.
+  • RYO/ARIA scenes: VO is exactly what the character says on camera.
+  ❌ BAD VO (rejected): "Broker-Dealer Firms / Investment Bank Divisions"
+  ✅ GOOD VO: "The STO acts as the operational engine of the investment bank's
+     client franchise. Trading Operations handle every order from receipt through
+     to settlement. Client Services manages the ongoing institutional relationships,
+     while Market Insights provides real-time intelligence on prices and liquidity
+     conditions — information that allows clients to time their transactions well."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OUTPUT FORMAT — produce a markdown table with exactly 8 rows and 5 columns:
@@ -270,8 +283,14 @@ RULES:
 6. Keep the same 8-scene markdown table format — output ALL 8 rows every time:
    | # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
 7. Preserve RYO (expert/mentor, dry wit) and ARIA (curious analyst, comic timing) voices.
-8. Visual Cue: 2–4 sentence production brief. On-Screen Text: multi-line with / separators.
-9. Voice Over: 3–5 rich, spoken sentences. Never output an empty Voice Over cell.
+8. Visual Cue: 2–4 sentence production brief.
+   On-Screen Text: structured text with / (forward slash) line breaks — max 6 lines. Never use \.
+9. Voice Over: SPOKEN NARRATION — 3–5 complete sentences read aloud by the narrator.
+   ⚠️ Voice Over must be flowing prose. NO bullets, labels, headers, or / separators.
+   ⚠️ Never copy On-Screen Text into Voice Over. They serve different purposes.
+   ⚠️ Never leave Voice Over empty — every scene must have 3–5 spoken sentences.
+   If reviewer says VO "looks like OST" or "is random", rewrite the VO as full spoken
+   prose that explains the concept to the audience while they watch the scene.
 
 Output ONLY the revised table, then on a new line:
 SLIDE_REFS_USED: [comma-separated slide numbers in ascending order]"""
