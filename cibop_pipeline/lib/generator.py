@@ -85,7 +85,11 @@ Scene 4  (RYO):    Core concept 2 with worked example or diagram. On-Screen Text
 Scene 5  (MOTION): Infographic for a list, process, or formula. On-Screen Text: structured label–value pairs or bullets.
 Scene 6  (ARIA):   Natural humor moment OR clarifying question. On-Screen Text: "Aria's Reaction: / [remark]"
 Scene 7  (BOTH):   Summary split-screen. Aria summarises, Ryo confirms. On-Screen Text: "KEY PRINCIPLES: / • ... / • ... / • ..."
-Scene 8  (RYO):    Tease next topic. On-Screen Text: "COMING UP: / [1-line tease]"
+Scene 8  (RYO):    Closing summary. Ryo faces camera directly, delivers a concise and memorable
+               distillation of the ONE core insight from this video. No transition to next topic.
+               Voice Over: 3–4 spoken sentences that crystallise the key concept — what it IS,
+               why it MATTERS, and what a practitioner needs to remember.
+               On-Screen Text: "KEY TAKEAWAY: / [1-sentence distillation of the core concept]"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COLUMN INSTRUCTIONS:
@@ -103,6 +107,8 @@ On-Screen Text — MULTI-LINE structured text (use / for line breaks ONLY):
   • ARIA: "Aria's Question: / [question]" or "Aria's Reaction: / [remark]"
   • MOTION: structured label-value pairs (4–6 lines max — do NOT list every item)
   • BOTH: "KEY PRINCIPLES: / • bullet 1 / • bullet 2 / • bullet 3"
+  • Scene 8 (closing): "KEY TAKEAWAY: / [1-sentence distillation of the core concept]"
+    Do NOT write "COMING UP:" or any reference to the next video.
 
 Voice Over — SPOKEN NARRATION. 3–5 complete sentences a narrator reads aloud.
   ⚠️ CRITICAL — Voice Over is AUDIO ONLY. It never appears on screen.
@@ -282,6 +288,10 @@ RULES:
 5. Slide references must remain in ascending order.
 6. Keep the same 8-scene markdown table format — output ALL 8 rows every time:
    | # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
+   Scene 8 is ALWAYS a closing summary (not a "COMING UP" tease):
+   — OST: "KEY TAKEAWAY: / [1-sentence distillation of the core concept]"
+   — VO: 3–4 spoken sentences crystallising what the concept IS, why it MATTERS,
+     and what a practitioner must remember. Rich, complete, standalone.
 7. Preserve RYO (expert/mentor, dry wit) and ARIA (curious analyst, comic timing) voices.
 8. Visual Cue: 2–4 sentence production brief.
    On-Screen Text: structured text with / (forward slash) line breaks — max 6 lines. Never use \.
