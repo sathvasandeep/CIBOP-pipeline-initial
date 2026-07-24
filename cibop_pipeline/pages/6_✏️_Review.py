@@ -75,6 +75,7 @@ def parse_script_table(script_text: str):
         return None, script_text, ""
 
     headers = [c.strip() for c in table_lines[0].split("|")[1:-1]]
+    n_cols  = len(headers)
     rows = []
     for tline in table_lines[1:]:
         cells = [c.strip() for c in tline.split("|")[1:-1]]
@@ -82,9 +83,40 @@ def parse_script_table(script_text: str):
             continue
         if all(re.fullmatch(r"[-: ]+", c) for c in cells):
             continue
-        while len(cells) < len(headers):
+
+        # ── Recover from extra | characters in cell content ───────────────────
+        # Claude occasionally writes "A | B" inside a cell (e.g. worked examples
+        # in Visual Cue or OST).  The naive split produces more cells than headers,
+        # shifting all columns right.  We detect this and merge the excess back.
+        n_extra = len(cells) - n_cols
+        if n_extra > 0 and n_cols == 5 and len(cells) >= 4:
+            if n_extra == 1:
+                # Exactly one extra pipe. Use "/" count as a proxy for OST content
+                # (OST uses "/" for line breaks; VC/VO are prose with few "/").
+                slash_idx = max(range(2, len(cells) - 1),
+                                key=lambda i: cells[i].count("/"))
+                max_sl = max(cells[i].count("/") for i in range(2, len(cells) - 1))
+
+                if max_sl == 0 or slash_idx <= 3:
+                    # No clear OST marker or OST found at position ≤3:
+                    # assume extra | is in OST → merge the two OST-position cells
+                    cells = cells[:3] + [cells[3] + " / " + cells[4]] + [cells[5]]
+                else:
+                    # OST marker found at position 4 (shifted right by 1):
+                    # extra | is in VC → merge VC cells and restore alignment
+                    cells = (cells[:2]
+                             + [" | ".join(cells[2:slash_idx])]
+                             + cells[slash_idx:])
+            else:
+                # Multiple extra pipes: keep first 2 (# and Character) as-is,
+                # merge everything in the middle into VC, treat last 2 as OST/VO.
+                cells = ([cells[0], cells[1]]
+                         + [" | ".join(cells[2:-2])]
+                         + cells[-2:])
+
+        while len(cells) < n_cols:
             cells.append("")
-        rows.append(cells[:len(headers)])
+        rows.append(cells[:n_cols])
 
     if not rows:
         return None, script_text, ""
@@ -253,7 +285,7 @@ def _compile_from_scenes(item_id: str, df, ver: int = 0) -> str:
                     val = " / ".join(ln.strip() for ln in val.splitlines() if ln.strip())
             else:
                 val = str(orig_row[col])
-            val = val.replace("|", "\\|")  # escape pipes
+            val = val.replace("|", " / ")  # pipe is the table separator — strip from cell content
             cells.append(val)
         rows.append("| " + " | ".join(cells) + " |")
 

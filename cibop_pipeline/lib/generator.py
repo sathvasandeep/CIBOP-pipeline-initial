@@ -95,14 +95,17 @@ Scene 8  (RYO):    Closing summary. Ryo faces camera directly, delivers a concis
 COLUMN INSTRUCTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Visual Cue / Animation — FULL production brief (2–4 sentences):
+  ⚠️ NEVER use | (pipe) inside this cell — use a dash or comma to separate elements instead.
   • MOTION: what graphics animate, what labels/arrows appear, colour scheme
   • RYO/ARIA: character position, props, board writing, graphic behind them
   • BOTH: split-screen layout, what each side shows
 
 On-Screen Text — MULTI-LINE structured text (use / for line breaks ONLY):
   ⚠️ Use / (forward slash) for line breaks. NEVER use \ (backslash) as a separator.
+  ⚠️ NEVER use | (pipe character) anywhere in any cell — it is reserved as the table column
+     separator. Using | inside a cell will corrupt the entire row. Use / or a dash instead.
   ⚠️ Keep OST to 4–6 short lines maximum. Do NOT put VO-style prose here.
-  • Scene 1: "{uor_id} | [Video Title] / {sc_id} / EAR: {ear_verb}"
+  • Scene 1: "{uor_id} / [Video Title] / {sc_id} / EAR: {ear_verb}"
   • RYO scenes: "TERM / definition line 1 / definition line 2" (3–5 lines)
   • ARIA: "Aria's Question: / [question]" or "Aria's Reaction: / [remark]"
   • MOTION: structured label-value pairs (4–6 lines max — do NOT list every item)
@@ -126,6 +129,10 @@ Voice Over — SPOKEN NARRATION. 3–5 complete sentences a narrator reads aloud
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OUTPUT FORMAT — produce a markdown table with exactly 8 rows and 5 columns:
 | # | Character | Visual Cue / Animation | On-Screen Text | Voice Over |
+
+⚠️ CRITICAL TABLE RULE: The | character is the column separator.
+   NEVER write | inside any cell value. If you need to separate items inside a cell use / instead.
+   A single extra | anywhere in a row will corrupt the entire table column alignment.
 
 After the table, on a new line write:
 SLIDE_REFS_USED: [comma-separated slide numbers you referenced, in ascending order]"""
@@ -295,12 +302,16 @@ RULES:
 7. Preserve RYO (expert/mentor, dry wit) and ARIA (curious analyst, comic timing) voices.
 8. Visual Cue: 2–4 sentence production brief.
    On-Screen Text: structured text with / (forward slash) line breaks — max 6 lines. Never use \.
+   ⚠️ NEVER use | (pipe character) inside any cell — pipe is the table column separator.
+      Using | inside a cell will corrupt the entire row. Use / or a dash instead.
 9. Voice Over: SPOKEN NARRATION — 3–5 complete sentences read aloud by the narrator.
    ⚠️ Voice Over must be flowing prose. NO bullets, labels, headers, or / separators.
    ⚠️ Never copy On-Screen Text into Voice Over. They serve different purposes.
    ⚠️ Never leave Voice Over empty — every scene must have 3–5 spoken sentences.
    If reviewer says VO "looks like OST" or "is random", rewrite the VO as full spoken
    prose that explains the concept to the audience while they watch the scene.
+   If the original VO appears to be OST content (labels / bullet-style short phrases),
+   replace it entirely with 3–5 proper spoken narration sentences.
 
 Output ONLY the revised table, then on a new line:
 SLIDE_REFS_USED: [comma-separated slide numbers in ascending order]"""
