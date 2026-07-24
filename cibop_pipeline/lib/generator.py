@@ -208,7 +208,7 @@ def generate_video_script(plan_item: dict) -> tuple[str, list[int]]:
 
     resp = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4000,
+        max_tokens=6000,
         messages=[{"role": "user", "content": prompt}]
     )
     if resp.stop_reason == "max_tokens":
@@ -332,7 +332,7 @@ SLIDE_REFS_USED: [slide numbers, ascending order]"""
 
     resp = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=4000,
+        max_tokens=6000,
         messages=[{"role": "user", "content": prompt}]
     )
     if resp.stop_reason == "max_tokens":
